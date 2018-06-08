@@ -64,7 +64,7 @@ public class PaymentService {
         ZonedDateTime zonedEntryTime = ZonedDateTime.ofInstant(entryTime, UTC);
         boolean isWeekend = zonedEntryTime.getDayOfWeek() == DayOfWeek.THURSDAY || zonedEntryTime.getDayOfWeek() == DayOfWeek.FRIDAY || zonedEntryTime.getDayOfWeek() == DayOfWeek.SATURDAY;
         if (isWeekend) {
-            // on weekend we charge a fixed price for the night
+            // on weekend we may have day parking and night parking
             ZonedDateTime entryDay = ZonedDateTime.ofInstant(entryTime, UTC);
             ZonedDateTime nightStart = ZonedDateTime.of(entryDay.toLocalDate(), LocalTime.of(22, 0), UTC);
 
