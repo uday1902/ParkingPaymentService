@@ -40,7 +40,9 @@ public class PaymentService {
     }
 
     private int calcPayment(Instant entryTime, Instant paymentTime) {
-
+        Duration timeInParking = between(entryTime, paymentTime);
+        if (isLessThan10Min(timeInParking))
+            return 0;
         ZonedDateTime entryDate = ZonedDateTime.ofInstant(entryTime, UTC);
         ZonedDateTime next6Am = ZonedDateTime.of(entryDate.toLocalDate(), LocalTime.of(6, 0), UTC);
         if (!next6Am.isAfter(entryDate)) {
@@ -59,8 +61,6 @@ public class PaymentService {
 
     private int dailyPayment(Instant entryTime, Instant paymentTime) {
         Duration timeInParking = between(entryTime, paymentTime);
-        if (isLessThan10Min(timeInParking))
-            return 0;
         ZonedDateTime zonedEntryTime = ZonedDateTime.ofInstant(entryTime, UTC);
         boolean isWeekend = zonedEntryTime.getDayOfWeek() == DayOfWeek.THURSDAY || zonedEntryTime.getDayOfWeek() == DayOfWeek.FRIDAY || zonedEntryTime.getDayOfWeek() == DayOfWeek.SATURDAY;
         if (isWeekend) {
