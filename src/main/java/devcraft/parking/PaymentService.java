@@ -6,7 +6,6 @@ import devcraft.parking.jpa.ParkingEntryRepository;
 import java.time.*;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.Temporal;
-import java.time.temporal.TemporalUnit;
 
 import static java.time.Duration.between;
 import static java.time.ZoneOffset.UTC;
@@ -63,38 +62,47 @@ public class PaymentService {
         if (isLessThan10Min(timeInParking))
             return 0;
         ZonedDateTime zonedEntryTime = ZonedDateTime.ofInstant(entryTime, UTC);
-        boolean b = zonedEntryTime.getDayOfWeek() == DayOfWeek.THURSDAY || zonedEntryTime.getDayOfWeek() == DayOfWeek.FRIDAY || zonedEntryTime.getDayOfWeek() == DayOfWeek.SATURDAY;
-        if (b) {
-            return calcWeekendPayment(entryTime, paymentTime);
+        boolean isWeekend = zonedEntryTime.getDayOfWeek() == DayOfWeek.THURSDAY || zonedEntryTime.getDayOfWeek() == DayOfWeek.FRIDAY || zonedEntryTime.getDayOfWeek() == DayOfWeek.SATURDAY;
+        if (isWeekend) {
+            // on weekend we charge a fixed price for the night
+            ZonedDateTime entryDay = ZonedDateTime.ofInstant(entryTime, UTC);
+            ZonedDateTime nightStart = ZonedDateTime.of(entryDay.toLocalDate(), LocalTime.of(22, 0), UTC);
+
+            Duration dayParkingDuration = Duration.between(entryTime, min(nightStart.toInstant(), paymentTime));
+            Duration nightParkingDuration = Duration.between(max(entryTime,nightStart.toInstant()), paymentTime);
+
+            int amountToPay = 0;
+            if (dayParkingDuration.toMillis() > 0) {
+                // calc payment for day parking
+                amountToPay += 12;
+                if (!isLessThanAnHour(dayParkingDuration)) {
+                    long duration = dayParkingDuration.toMillis() - minAsMillis(60);
+                    // calc 15min intervals
+                    long intervalsToPay = 1 + duration / minAsMillis(15);
+
+                    // add the intervals payment to total
+                    amountToPay += (intervalsToPay * 3);
+                }
+            }
+            if (nightParkingDuration.toMillis() > 0) {
+                // we have some night parking
+                // add payment for night time
+                amountToPay += 40;
+            }
+            return Math.min(amountToPay, 96);
         }
 
         int amountToPay = 12;
         if (!isLessThanAnHour(timeInParking)) {
-            long intervalsToPay = calcIntervalsToPay(timeInParking.toMillis());
+            long duration = timeInParking.toMillis() - minAsMillis(60);
+            // calc 15min intervals
+            long intervalsToPay = 1 + duration / minAsMillis(15);
+
+            // add the intervals payment to total
             amountToPay += (intervalsToPay * 3);
         }
-        return Math.min(amountToPay, 96);
-    }
 
-    private int calcWeekendPayment(Instant entryTime, Instant paymentTime) {
-        ZonedDateTime entryDay = ZonedDateTime.ofInstant(entryTime, UTC);
-        ZonedDateTime nightStart = ZonedDateTime.of(entryDay.toLocalDate(), LocalTime.of(22, 0), UTC);
-
-
-        Duration durationInDayParking = Duration.between(entryTime, min(nightStart.toInstant(),paymentTime));
-        Duration durationInNigntParking = Duration.between(max(entryTime,nightStart.toInstant()), paymentTime);
-
-        int amountToPay = 0;
-        if (durationInDayParking.toMillis() > 0) {
-            amountToPay += 12;
-            if (!isLessThanAnHour(durationInDayParking)) {
-                long intervalsToPay = calcIntervalsToPay(durationInDayParking.toMillis());
-                amountToPay += (intervalsToPay * 3);
-            }
-        }
-        if (durationInNigntParking.toMillis() > 0) {
-            amountToPay += 40;
-        }
+        // There is a maximum payment per day
         return Math.min(amountToPay, 96);
     }
 
@@ -116,12 +124,6 @@ public class PaymentService {
 
     private boolean isLessThan10Min(Duration timeInParking) {
         return timeInParking.toMillis() < Duration.ofMinutes(10).toMillis();
-    }
-
-    private long calcIntervalsToPay(long timeInParking) {
-        timeInParking -= minAsMillis(60);
-
-        return 1 + timeInParking / minAsMillis(15);
     }
 
     private long minAsMillis(int min) {
