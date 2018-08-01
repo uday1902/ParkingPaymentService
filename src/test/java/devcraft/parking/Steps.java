@@ -4,6 +4,8 @@ import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
 import devcraft.parking.jpa.ParkingEntryRepository;
+import devcraft.parking.policy.DefaultPaymentPolicyHandler;
+import devcraft.parking.policy.PaymentPolicy;
 import org.junit.Assert;
 
 import java.time.Instant;
@@ -21,7 +23,8 @@ public class Steps {
     public Steps(ParkingEntryRepository repository) {
         parkingService = new PaymentService(
                 () -> now,
-                repository);
+                repository,
+                new DefaultPaymentPolicyHandler());
     }
 
     @Given("^I entered the parking at (.*)$")

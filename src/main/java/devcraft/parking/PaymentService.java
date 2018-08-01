@@ -15,14 +15,16 @@ public class PaymentService {
 
     private ParkingEntryRepository repository;
     private Clock clock;
+    private PaymentPolicy paymentPolicy;
 
     public interface Clock {
         long now();
     }
 
-    public PaymentService(Clock clock, ParkingEntryRepository repository) {
+    public PaymentService(Clock clock, ParkingEntryRepository repository, PaymentPolicy paymentPolicy) {
         this.clock = clock;
         this.repository = repository;
+        this.paymentPolicy = paymentPolicy;
     }
 
     public long enterParking() {
@@ -37,17 +39,6 @@ public class PaymentService {
         long paymentTime = clock.now();
         ParkingEntryRepository.ParkingEntry entry = repository.findOne(code);
         long entryTime = entry.getTime();
-        return newCalcPayment(Instant.ofEpochMilli(entryTime), Instant.ofEpochMilli(paymentTime));
+        return paymentPolicy.calculatePayment(Instant.ofEpochMilli(entryTime), Instant.ofEpochMilli(paymentTime));
     }
-
-    private int newCalcPayment(Instant entryTime, Instant paymentTime){
-        PaymentPolicy dailyPaymentPolicy = new DailyPaymentPolicy();
-        PaymentPolicy minPaymentPolicy = new MinPaymentPolicy(dailyPaymentPolicy);
-        PaymentPolicy weekendNightPaymentPolicy = new WeekendNightPaymentPolicy(minPaymentPolicy);
-        PaymentPolicy maxPaymentPolicy = new MaxPaymentPolicy(weekendNightPaymentPolicy);
-        PaymentPolicy paymentPolicy = new WeeklyPaymentPolicy(maxPaymentPolicy);
-        EscapePaymentPolicy escapePaymentPolicy = new EscapePaymentPolicy(paymentPolicy);
-        return escapePaymentPolicy.calculatePayment(entryTime,paymentTime);
-    }
-
 }

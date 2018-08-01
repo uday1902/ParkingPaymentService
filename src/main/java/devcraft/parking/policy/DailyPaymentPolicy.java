@@ -1,7 +1,5 @@
 package devcraft.parking.policy;
 
-import devcraft.parking.util.TimeUtils;
-
 import java.time.Duration;
 import java.time.Instant;
 
@@ -14,8 +12,12 @@ public class DailyPaymentPolicy implements PaymentPolicy {
     }
 
     private int calculateNoOfIntervals(Duration parkingduration) {
-        long duration = parkingduration.toMillis();
-        return (int) (1 + duration / TimeUtils.minAsMillis(15));
+        Long duration = parkingduration.toMillis();
+        return 1 + duration.intValue() / minAsMillis(15);
+    }
+
+    private int minAsMillis(int min) {
+        return min * 60 * 1000;
     }
 
 }
