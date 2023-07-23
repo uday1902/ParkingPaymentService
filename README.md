@@ -2,6 +2,15 @@
 Below are the several conditions listed below to calculate the payment for any parking. 
 I want to pay so I can go home
 
+Less than 10 min is free. Escape Time
+Parked Time < 10min  -> 0$
+10 min <= Parked Time < 1hr  -> 12$
+1hr <= Parked Time -> 3$ for every 15 min
+Day Maximum is 96$
+Weekend Day ( Thu, Fri, Sat, Sun till 10 PM) only rate 12$
+Weekend Night ( after 10 PM) 40$
+
+
  Examples: 
       | day_of_week | entry_time          | payment_time        | amount_to_pay | comment                         |
       | Monday      | 0001-01-01 10:00:00 | 0001-01-01 10:09:59 |             0 | escape time                     |
